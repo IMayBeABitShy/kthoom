@@ -45,7 +45,7 @@ export class BookViewer {
 
     this.rotateTimes_ = 0;
     /** @type {!FitMode} */
-    this.fitMode_ = FitMode.Best;
+    this.fitMode_ = FitMode.Width;
     this.wheelTimer_ = null;
     this.wheelTurnedPageAt_ = 0;
 
