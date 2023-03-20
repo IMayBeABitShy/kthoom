@@ -17,14 +17,14 @@
  *   - Parse CSS and see if any rules reference a url() and do Blob URLs at render time.
  */
 
-import { UnarchiveEventType } from './bitjs/archive/archive.js';
-import { BookBinder } from './book-binder.js';
+import { UnarchiveEventType } from './bitjs/archive/decompress.js';
+import { BookBinder, BookType } from './book-binder.js';
 import { BookBindingCompleteEvent, BookPageExtractedEvent, BookProgressEvent } from './book-events.js';
-import { NodeType, walkDom } from './dom-walker.js';
+import { NodeType, walkDom } from './common/dom-walker.js';
 import { ATTRIBUTE_WHITELIST, BLOB_URL_ATTRIBUTES, ELEMENT_WHITELIST } from './epub-whitelists.js';
 import { FileRef } from './file-ref.js';
 import { XhtmlPage } from './page.js';
-import { assert } from './helpers.js';
+import { assert } from './common/helpers.js';
 
 const ATTR_PREFIX = 'data-kthoom-';
 const CONTAINER_FILE = 'META-INF/container.xml';
@@ -76,7 +76,7 @@ export class EPUBBookBinder extends BookBinder {
   /** @override */
   beforeStart_() {
     let firstFile = true;
-    this.unarchiver_.addEventListener(UnarchiveEventType.EXTRACT, evt => {
+    this.unarchiver.addEventListener(UnarchiveEventType.EXTRACT, evt => {
       const theFile = evt.unarchivedFile;
       this.fileMap_.set(theFile.filename, theFile.fileData);
 
@@ -86,7 +86,7 @@ export class EPUBBookBinder extends BookBinder {
         this.validateMimetype_(theFile);
       }
     });
-    this.unarchiver_.addEventListener(UnarchiveEventType.FINISH, evt => {
+    this.unarchiver.addEventListener(UnarchiveEventType.FINISH, evt => {
       this.setUnarchiveComplete();
 
       this.parseContainer_();
@@ -97,12 +97,18 @@ export class EPUBBookBinder extends BookBinder {
     });
   }
 
+  getBookType() { return BookType.EPUB; }
+
+  getMIMEType() {
+    return EPUB_MIMETYPE;
+  }
+
   // TODO: Proper error handling throughout.
 
   /**
    * @param {string} href
    * @param {string} rootDir
-   * @return {FileRef}
+   * @returns {FileRef}
    * @private
    */
   getManifestFileRef_(href, rootDir) {
@@ -127,8 +133,8 @@ export class EPUBBookBinder extends BookBinder {
         const htmlDoc = new DOMParser().parseFromString(toText(data), XHTML_MIMETYPE);
         xhtmlChunks.push(htmlDoc);
       }
-      this.layoutPercentage_ = (i + 1) / numSpineRefs;
-      this.notify(new BookProgressEvent(this, 1));
+      this.layoutPercentage = (i + 1) / numSpineRefs;
+      this.dispatchEvent(new BookProgressEvent(this, 1));
     }
 
     const allPages = [];
@@ -232,11 +238,11 @@ export class EPUBBookBinder extends BookBinder {
       });
 
       allPages.push(nextPage);
-      this.notify(new BookProgressEvent(this, allPages.length));
-      this.notify(new BookPageExtractedEvent(this, nextPage, allPages.length));
+      this.dispatchEvent(new BookProgressEvent(this, allPages.length));
+      this.dispatchEvent(new BookPageExtractedEvent(this, nextPage, allPages.length));
     }
 
-    this.notify(new BookBindingCompleteEvent(this));
+    this.dispatchEvent(new BookBindingCompleteEvent(this));
   }
 
   /** @private */

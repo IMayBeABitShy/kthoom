@@ -6,6 +6,7 @@
  * Copyright(c) 2018 Google Inc.
  */
 
+/** @enum */
 export const Key = {
   TAB: 9,
   ENTER: 13,
@@ -23,13 +24,21 @@ export const Key = {
   RIGHT_SQUARE_BRACKET: 221,
 };
 
-export const getElem = function (id) {
+// Get the document (or an empty object in the case of this module being pulled into tests).
+let document = {};
+try { document = window.document; } catch (e) {};
+
+/**
+ * @param {string} id The id of the element to get.
+ * @returns {HTMLElement} The element.
+ */
+export function getElem(id) {
   return document.body.querySelector('#' + id);
-};
+}
 
 // Parse the URL parameters the first time this module is loaded.
 export const Params = {};
-const search = document.location.search;
+const search = document?.location?.search;
 if (search && search[0] === '?') {
   const args = search.substring(1).split('&');
   for (let arg of args) {
@@ -57,6 +66,8 @@ export function serializeParamsToBrowser() {
 }
 
 /**
+ * If ?debug=true, then throws a JavaScript error, otherwise prints a console.error(). If
+ * optContextObj is set, also console.dirs it.
  * @param {boolaen} cond
  * @param {string=} str
  * @param {Object=} optContextObj

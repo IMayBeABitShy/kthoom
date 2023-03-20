@@ -9,7 +9,7 @@
   <link rel="manifest" href="kthoom.webmanifest" />
   <link rel="preload" href="code/book.js" crossorigin="use-credentials" as="script" />
   <link rel="preload" href="code/book-viewer.js" crossorigin="use-credentials" as="script" />
-  <link rel="preload" href="code/helpers.js" crossorigin="use-credentials" as="script" />
+  <link rel="preload" href="code/common/helpers.js" crossorigin="use-credentials" as="script" />
   <link rel="preload" href="code/page.js" crossorigin="use-credentials" as="script" />
   <link rel="preload" href="code/reading-stack.js" crossorigin="use-credentials" as="script" />
 
@@ -91,7 +91,6 @@
         <button id="nextBook" class="navbutton" title="Next Book (])" disabled aria-label="Next Book button">
           &gt;&gt;
         </button>
-        <!-- TODO: Make an SVG for this? -->
         <button id="fullScreen" class="navbutton" title="Full Screen (F)" aria-label="Full Screen button"
           style="display:none">
           &#x26f6;
@@ -100,24 +99,21 @@
     </div> <!-- header -->
     <div id="bookViewer">
       <svg id="pages" style="display:none">
-        <g id="bvViewport">
-          <g id="page1">
-            <image id="page1Image"></image>
-            <foreignObject id="page1Html"></foreignObject>
+        <defs>
+          <g id="pageTemplate">
+            <image></image>
+            <foreignObject></foreignObject>
           </g>
-          <g id="page2">
-            <image id="page2Image"></image>
-            <foreignObject id="page2Html"></foreignObject>
-          </g>
-        </g>
+        </defs>
+        <g id="bvViewport"></g>
       </svg>
     </div> <!-- bookViewer -->
-    <div id="readingStackOverlay" class="fullScreenOverlay" style="display:none"></div>
-    <div id="readingStack">
-      <div id="readingStackContents">
+    <div id="readingStackOverlay" class="fullScreenOverlay hidden"></div>
+    <div id="readingStack" class="tray">
+      <div id="readingStackContents" class="trayContents">
         No books loaded
       </div>
-      <button id="readingStackButton" title="Reading Stack" aria-label="Reading Stack button">
+      <button id="readingStackButton" class="trayButton" title="Reading Stack" aria-label="Reading Stack button">
         <svg stroke="currentColor" stroke-width="2" width="30" height="50">
           <defs>
             <g id="singleRow" stroke="currentColor">
@@ -132,79 +128,123 @@
         </svg>
       </button>
     </div> <!-- readingStack -->
+    <div id="metadataViewerOverlay" class="fullScreenOverlay hidden"></div>
+    <div id="metadataViewer" class="tray">
+      <button id="metadataViewerButton" class="trayButton" title="Metadata Viewer" aria-label="Metadata Viewer button">
+        <svg fill="currentColor" viewBox="-20 0 275 275" width="30" height="50">
+          <polygon points="255,155 110,10 10,10 10,110 155,255" stroke="black" stroke-linejoin="round" />
+          <circle cx="66.5" cy="67" r="22.5" fill="black" stroke="none" />
+          <circle id="metadataIsPresent" cx="200" cy="30" r="30" fill="yellow" stroke="black" style="display:none"/>
+        </svg>        
+      </button>
+      <div class="trayContents">
+        <div id="metadataTrayContents">
+          No book loaded
+        </div>
+        <div id="metadataToolbar" style="display:none">
+          <button id="closeMetadataButton" class="metadataButton"
+                  title="Close (T)" aria-label="Close Metadata viewer/editor button">✕</button>
+          <button id="editMetadataButton" class="metadataButton"
+                  title="Edit (E)" aria-label="Edit Metadata button">✎</button>
+          <button id="addRowMetadataButton" class="metadataButton" style="display:none"
+                  title="Add Row (R)" aria-label="Add Row of Metadata button">＋</button>
+          <button id="saveMetadataButton" class="metadataButton" style="display:none"
+                  title="Save (S)" aria-label="Save Metadata button">💾</button>
+        </div>
+      </div>
+    </div> <!-- metadataViewer-->
   </div>
 
   <div id="helpOverlay">
-    <section class="helpSection">
-      <h2>Navigation</h2>
-      <dl class="helplist">
-        <dt>?</dt>
-        <dd>Show/hide this help screen</dd>
+    <div id="helpOverlayInner">
+      <section class="helpSection">
+        <h2>Navigation</h2>
+        <dl class="helplist">
+          <dt>?</dt>
+          <dd>Show/hide this help screen</dd>
 
-        <dt>&#x2190; <span class="separator">/</span> &#x2192;</dt>
-        <dd>Go to previous / next page</dd>
+          <dt>&#x2190; <span class="separator">/</span> &#x2192;</dt>
+          <dd>Go to previous / next page</dd>
 
-        <dt>Shift + &#x2190; <span class="separator">/</span> &#x2192;</dt>
-        <dd>Go to first / last page</dd>
+          <dt>Shift + &#x2190; <span class="separator">/</span> &#x2192;</dt>
+          <dd>Go to first / last page</dd>
 
-        <dt>[ <span class="separator">/</span> ]</dt>
-        <dd>Load previous / next book</dd>
+          <dt>[ <span class="separator">/</span> ]</dt>
+          <dd>Load previous / next book</dd>
 
-        <dt>M</dt>
-        <dd>Open/close the Menu</dd>
+          <dt>M</dt>
+          <dd>Open/close the Menu</dd>
 
-        <dt>S</dt>
-        <dd>Open/close the Reading stack</dd>
-      </dl>
-    </section>
-    <section class="helpSection">
-      <h2>Book Viewing</h2>
-      <dl class="helplist">
-        <dt>L <span class="separator">/</span> R</dt>
-        <dd>Rotate left &#x27F2; / Rotate right &#x27F3;</dd>
+          <dt>S</dt>
+          <dd>Open/close the Reading Stack</dd>
 
-        <dt>H <span class="separator">/</span> W</dt>
-        <dd>Scale to height / Scale to width</dd>
+          <dt>T</dt>
+          <dd>Open/close the Tag (Metadata) Viewer</dd>
+        </dl>
+      </section>
+      <section class="helpSection">
+        <h2>Book Viewing</h2>
+        <dl class="helplist">
+          <dt>L <span class="separator">/</span> R</dt>
+          <dd>Rotate left &#x27F2; / Rotate right &#x27F3;</dd>
 
-        <dt>B</dt>
-        <dd>Best fit mode</dd>
+          <dt>H <span class="separator">/</span> W</dt>
+          <dd>Scale to height / Scale to width</dd>
 
-        <dt>1 <span class="separator">/</span> 2</dt>
-        <dd>1-page view / 2-page view</dd>
+          <dt>B</dt>
+          <dd>Best fit mode</dd>
 
-        <dt>F</dt>
-        <dd>Toggle Fullscreen Mode (if available)</dd>
-      </dl>
-    </section>
-    <section class="helpSection">
-      <h2>Loading Books</h2>
-      <dl class="helplist">
-        <dt>O</dt>
-        <dd>Open local books (use Shift to open multiple)</dd>
+          <dt>1 <span class="separator">/</span> 2 <span class="separator">/</span> 3 <span class="separator">/</span> 4</dt>
+          <dd>1-page / 2-page / Long-strip / Wide-strip</dd>
 
-        <dt>U</dt>
-        <dd>Open a book / reading list from a URL</dd>
+          <dt>F</dt>
+          <dd>Toggle Fullscreen Mode (if available)</dd>
 
-        <dt>G</dt>
-        <dd>Open a book / reading list from Google Drive (if available)</dd>
-      </dl>
-    </section>
-    <ul class="helpLinks">
-      <li><a href="https://codedread.com/kthoom/privacy.html" target="_blank">Privacy Policy</a></li>
-      <li><a href="https://github.com/codedread/kthoom" target="_blank">GitHub Project</a></li>
-    </ul>
+          <dt>P</dt>
+          <dd>Hide metadata viewer and reading stack panel buttons</dd>
+        </dl>
+      </section>
+      <section class="helpSection">
+        <h2>Loading Books</h2>
+        <dl class="helplist">
+          <dt>O</dt>
+          <dd>Open local books (use Shift to open multiple)</dd>
+
+          <dt class="hideEnableDirectoryElem">D</dt>
+          <dd class="hideEnableDirectoryElem">Open local directory</dd>
+
+          <dt>U</dt>
+          <dd>Open a book / reading list from a URL</dd>
+
+          <dt>G</dt>
+          <dd>Open a book / reading list from Google Drive (if available)</dd>
+        </dl>
+      </section>
+      <ul class="helpLinks">
+        <li><a href="https://codedread.com/kthoom/privacy.html" target="_blank">Privacy Policy</a></li>
+        <li><a href="https://github.com/codedread/kthoom" target="_blank">GitHub Project</a></li>
+      </ul>
+    </div>
   </div>
 
   <template id="mainMenu">
     <ul id="mainMenuItems" class="menuItems" role="menu" aria-label="Main Menu">
       <li role="none">
         <button id="menu-open" class="menuItem" role="menuitem" tabindex="-1" aria-expanded="false">
-          Open<span class="subMenuArrow">&#x25B6;</span>
+          <span class="menuItemText">Open</span>
+          <span class="subMenuArrow">&#x25B6;</span>
         </button>
       </li>
       <li role="none">
-        <button id="menu-close-all" style="display:none" disabled="true" class="menuItem" role="menuitem" tabindex="-1">
-          Close All
+        <button id="menu-download" style="display:none" disabled="true" class="menuItem"
+                role="menuitem" tabindex="-1" aria-expanded="false">
+          <span class="menuItemText">Download a copy</span>
+        </button>
+      </li>
+      <li role="none">
+        <button id="menu-close-all" style="display:none" disabled="true" class="menuItem"
+                role="menuitem" tabindex="-1">
+          <span class="menuItemText">Close All</span>
         </button>
       </li>
       <li role="none">
@@ -212,7 +252,8 @@
       </li>
       <li role="none">
         <button id="menu-view" class="menuItem" role="menuitem" tabindex="-1" aria-expanded="false">
-          View<span class="subMenuArrow">&#x25B6;</span>
+          <span class="menuItemText">View</span>
+          <span class="subMenuArrow">&#x25B6;</span>
         </button>
       </li>
       <li role="none">
@@ -220,7 +261,8 @@
       </li>
       <li role="none">
         <button id="menu-help" class="menuItem" role="menuitem" tabindex="-1">
-          Help (Keyboard Shortcuts)<span class="menuItemKey">?</span>
+          <span class="menuItemText">Help (Keyboard Shortcuts)</span>
+          <span class="menuItemKey">?</span>
         </button>
       </li>
     </ul>
@@ -230,24 +272,35 @@
     <ul id="openMenuItems" class="menuItems" role="menu" aria-label="Open Menu">
       <li role="none">
         <button id="menu-open-local-files" class="menuItem" role="menuitem" tabindex="-1">
-          Open from Your Computer<span class="menuItemKey">O</span>
+          <span class="menuItemText">Open Files</span>
+          <span class="menuItemKey">O</span>
         </button>
+        <!-- TODO: Remove this once all browsers support the File System Access API. -->
         <input id="menu-open-local-files-input" type="file" multiple tabindex="-1">
       </li>
       <li role="none">
-        <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">
-          Open from URL<span class="menuItemKey">U</span>
+        <button id="menu-open-directory" class="menuItem hideEnableDirectoryElem" role="menuitem" tabindex="-1">
+          <span class="menuItemText">Open Directory</span>
+          <span class="menuItemKey">D</span>
         </button>
       </li>
       <li role="none">
-        <button id="menu-open-google-drive" style="display:none" disabled="true" class="menuItem" role="menuitem"
-          tabindex="-1">
-          Open from Google Drive<span class="menuItemKey">G</span>
+        <button id="menu-open-url" class="menuItem" role="menuitem" tabindex="-1">
+          <span class="menuItemText">Open from URL</span>
+          <span class="menuItemKey">U</span>
+        </button>
+      </li>
+      <li role="none">
+        <button id="menu-open-google-drive" style="display:none" disabled="true" class="menuItem"
+                role="menuitem" tabindex="-1">
+          <span class="menuItemText">Open from Google Drive</span>
+          <span class="menuItemKey">G</span>
         </button>
       </li>
       <li role="none">
         <button id="menu-open-ipfs-hash" class="menuItem" role="menuitem" tabindex="-1">
-          Open from IPFS<span class="menuItemKey">I</span>
+          <span class="menuItemText">Open from IPFS</span>
+          <span class="menuItemKey">I</span>
         </button>
       </li>
     </ul>
@@ -257,12 +310,14 @@
     <ul id="viewMenuItems" class="menuItems" role="menu" aria-label="View Menu">
       <li role="none">
         <button id="menu-view-rotate-right" class="menuItem" role="menuitem" tabindex="-1">
-          Rotate Right<span class="menuItemKey">R</span>
+          <span class="menuItemText">Rotate Right</span>
+          <span class="menuItemKey">R</span>
         </button>
       </li>
       <li role="none">
         <button id="menu-view-rotate-left" class="menuItem" role="menuitem" tabindex="-1">
-          Rotate Left<span class="menuItemKey">L</span>
+          <span class="menuItemText">Rotate Left</span>
+          <span class="menuItemKey">L</span>
         </button>
       </li>
       <li role="none">
@@ -271,12 +326,30 @@
       <!-- TODO: Proper a11y for which item is selected -->
       <li role="none">
         <button id="menu-view-one-page" class="menuItem" role="menuitem" tabindex="-1">
-          <span class="menuCheckmark"></span>1-page viewer<span class="menuItemKey">1</span>
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">1-page viewer</span>
+          <span class="menuItemKey">1</span>
         </button>
       </li>
       <li role="none">
         <button id="menu-view-two-page" class="menuItem" role="menuitem" tabindex="-1">
-          <span class="menuCheckmark"></span>2-page viewer<span class="menuItemKey">2</span>
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">2-page viewer</span>
+          <span class="menuItemKey">2</span>
+        </button>
+      </li>
+      <li role="none">
+        <button id="menu-view-long-strip" class="menuItem" role="menuitem" tabindex="-1">
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Long Strip</span>
+          <span class="menuItemKey">3</span>
+        </button>
+      </li>
+      <li role="none">
+        <button id="menu-view-wide-strip" class="menuItem" role="menuitem" tabindex="-1">
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Wide Strip</span>
+          <span class="menuItemKey">4</span>
         </button>
       </li>
       <li role="none">
@@ -284,17 +357,33 @@
       </li>
       <li role="none">
         <button id="menu-view-fit-best" class="menuItem" role="menuitem" tabindex="-1">
-          <span class="menuCheckmark"></span>Best Fit<span class="menuItemKey">B</span>
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Best Fit</span>
+          <span class="menuItemKey">B</span>
         </button>
       </li>
       <li role="none">
         <button id="menu-view-fit-height" class="menuItem" role="menuitem" tabindex="-1">
-          <span class="menuCheckmark"></span>Fit to Height<span class="menuItemKey">H</span>
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Fit to Height</span>
+          <span class="menuItemKey">H</span>
         </button>
       </li>
       <li role="none">
         <button id="menu-view-fit-width" class="menuItem" role="menuitem" tabindex="-1">
-          <span class="menuCheckmark"></span>Fit to Width<span class="menuItemKey">W</span>
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Fit to Width</span>
+          <span class="menuItemKey">W</span>
+        </button>
+      </li>
+      <li role="none">
+        <hr class="menuSeparator" />
+      </li>
+      <li role="none">
+        <button id="menu-view-hide-panel-buttons" class="menuItem" role="menuitem" tabindex="-1">
+          <span class="menuCheckmark"></span>
+          <span class="menuItemText">Hide panel buttons</span>
+          <span class="menuItemKey">P</span>
         </button>
       </li>
     </ul>
@@ -304,22 +393,37 @@
     <ul id="viewerContextMenuItems" class="menuItems" role="menu" aria-label="Viewer Context Menu">
       <li role="none">
         <button id="save-page-as-png" class="menuItem" role="menuitem" tabindex="-1">
-          Save page as PNG
+          <span class="menuItemText">Save page as PNG</span>
         </button>
       </li>
       <li role="none">
         <button id="save-page-as-jpg" class="menuItem" role="menuitem" tabindex="-1">
-          Save page as JPG
+          <span class="menuItemText">Save page as JPG</span>
         </button>
       </li>
       <li role="none">
         <button id="save-page-as-webp" class="menuItem" role="menuitem" tabindex="-1">
-          Save page as WebP
+          <span class="menuItemText">Save page as WebP</span>
         </button>
       </li>
     </ul>
   </template>
 
+  <template id="metadataTable">
+    <table class="metadataTable">
+      <thead>
+        <th>Property</th>
+        <th>Value</th>
+      </thead>
+    </table>
+  </template>
+
+  <template id="metadataTableRow">
+    <tr>
+      <td class="metadataPropName">property_name</td>
+      <td class="metadataPropValue">property_value</td>
+    </tr>
+  </template>
 </body>
 <script>
   if ('serviceWorker' in navigator) {
@@ -332,18 +436,15 @@
     });
   }  
 </script>
- 
-<!--
-<script>
-  (function (i, s, o, g, r, a, m) {
-  i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
-    (i[r].q = i[r].q || []).push(arguments)
-  }, i[r].l = 1 * new Date(); a = s.createElement(o),
-    m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
-  })(window, document, 'script', 'https://www.google-analytics.com/analytics.js', 'ga');
 
-  ga('create', 'UA-8244614-4', 'auto');
-  ga('send', 'pageview');
+<!--
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-8244614-4"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-8244614-4');
 </script>
 -->
 
